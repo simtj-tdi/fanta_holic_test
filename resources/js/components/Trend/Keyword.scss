@@ -1,0 +1,14 @@
+.chart-area {
+    display: inline-block;
+    width: calc(50% - 10px);
+    height: 400px;
+    text-align: center;
+    vertical-align: middle;
+    & + .chart-area {
+        margin-left: 20px;
+    }
+    h2 {
+        font-size:12px;
+        font-weight: 800
+    }
+}

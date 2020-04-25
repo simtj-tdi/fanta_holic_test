@@ -1,0 +1,287 @@
+@extends('layouts.master')
+
+@push('style')
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/bxslider/4.2.12/jquery.bxslider.css">
+    <style>
+        .card{
+            margin-bottom: 0px;
+        }
+        .video_wrapper{ position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; max-width: 100% }
+        .video_wrapper video {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+        .bx-wrapper img {width: 100%}
+    </style>
+@endpush
+@section('content')
+    <main class="main">
+        <div class="p-5 card">
+        @if (Session::has('message'))
+            <div class="alert alert-danger font-weight-bold">{{ Session::get('message') }}</div>
+        @endif
+            <form id='edit_board' enctype="multipart/form-data" method="POST" action="{{url('/admin/boards/'.$rows[0]->id)}}">
+            {{ csrf_field() }}
+                <input type="hidden" name="type" value="{{$params['type']}}">
+                <input type="hidden" name="_method" value="put">
+                <input type="hidden" name="restore_check" value="false">
+                 <div class="form-group row">
+                     <label for="id" class="col-sm-2 col-form-label card">게시물 아이디</label>
+                     <div class="col-sm-10">
+                         <input type="text" class="form-control card" id="id" name="id" value="{{isset($rows[0]->id)? $rows[0]->id : ''}}" readonly>
+                     </div>
+                 </div>
+                    <div class="form-group row">
+                        <label for="id" class="col-sm-2 col-form-label card">게시물 종류</label>
+                        <div class="col-sm-10">
+                            <input type="text" class="form-control card" id="id" name="id" value="{{isset($rows[0]->type)? $rows[0]->type : ''}}" readonly>
+                        </div>
+                    </div>
+                  <div class="form-group row">
+                      <label for="thumbnails" class="col-sm-2 col-form-label card">기존 thumbnail</label>
+                      <div class="col-sm-10">
+                          <div class="row">
+                              <div class="col">
+                              @if (isset($rows[0]->thumbnail_url))
+                                  <img src="{{env('CDN_URL').$rows[0]->thumbnail_url}}" class='card ' style ="width: 340px;">
+                              @endif
+                              </div>
+                          </div>
+
+                      </div>
+                  </div>
+                <div class="form-group row">
+                    <label for="thumbnails" class="col-sm-2 col-form-label card">바꿀 thumbnail</label>
+                    <div class="col-sm-10">
+                        <div class="alert alert-info" role="alert">
+                            이미지 권장 해상도 640 * 640
+                        </div>
+                        <div class="row">
+                            <div class="col">
+                                <input type="file" name="thumbnail" class='card' id="thumbnail">
+                                <img id="blah" src="#" alt="need image"  class='card float-left'/>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group row">
+                    <label for="thumbnails" class="col-sm-2 col-form-label card">기존 데이터</label>
+                    <div class="col-sm-10">
+                            @if(isset($rows[0]->data))
+                                <div class="col bxslider">
+                                @foreach($rows[0]->data as $val)
+                                    @if(isset($val->image))
+                                        <div><img src="{{env('CDN_URL').$val->image}}"></div>
+                                    @elseif(isset($val->video->src))
+                                        <div>
+                                            <div class="video_wrapper">
+                                                <video src="{{env('CDN_URL').$val->video->src}}"
+                                                       controls  autoplay="autoplay"
+                                                       poster="{{env('CDN_URL').$val->video->poster}}"></video>
+                                            </div>
+                                        </div>
+                                    @else
+                                    @endif
+                                @endforeach
+                                </div>
+                            @endif
+                    </div>
+                </div>
+                <div class="form-group row">
+                    <label for="thumbnails" class="col-sm-2 col-form-label card">교체할 데이터</label>
+                    <div class="col-sm-10">
+                        <div class="alert alert-info" role="alert">
+                            이미지 권장 해상도 640 * 640
+                        </div>
+                        <div class="col">
+                            <input type="file" name="data_files[]" class='card' id="data_files[]" multiple>
+                            <div class="gallery bxslider_2 mt-3"></div>
+                        </div>
+                    </div>
+                </div>
+                  <div class="form-group row">
+                      <label for="title" class="col-sm-2 col-form-label card">제목</label>
+                      <div class="col-sm-10">
+                          <input type="text" class="form-control" id="title" name="title" value="{{isset($rows[0]->title)? $rows[0]->title : ''}}">
+                      </div>
+                  </div>
+                  <div class="form-group row">
+                      <label for="ori_tag" class="col-sm-2 col-form-label card">오리지널 태그</label>
+                      <div class="col-sm-10">
+                          <input type="text" class="form-control" id="ori_tag[]" name="ori_tag" value="{{isset($rows[0]->ori_tag)? $rows[0]->ori_tag : ''}}" placeholder="콤마(,)로 태그 분할" readonly>
+                      </div>
+                  </div>
+                  <div class="form-group row">
+                      <label for="ori_tag" class="col-sm-2 col-form-label card">자체 태그</label>
+                      <div class="col-sm-10">
+                          <input type="text" class="form-control" id="custom_tag[]" name="custom_tag" value="{{isset($rows[0]->custom_tag)? $rows[0]->custom_tag : ''}}" placeholder="콤마(,)로 태그 분할">
+                      </div>
+                  </div>
+                  <div class="form-group row">
+                      <label for="state" class="col-sm-2 col-form-label card">상태</label>
+                      <div class="col-sm-10">
+                          <select class="form-control" name="state" id="state">
+                              <option value="0" @if (isset($rows[0]->state)) {{($rows[0]->state=='0')? 'selected' : ''}} @endif>대기</option>
+                              <option value="1" @if (isset($rows[0]->state)) {{($rows[0]->state=='1')? 'selected' : ''}} @endif>게시</option>
+                          </select>
+                      </div>
+                  </div>
+                  <div class="form-group row">
+                      <label for="state" class="col-sm-2 col-form-label card">성별</label>
+                      <div class="col-sm-10">
+                          <select class="form-control" name="gender" id="gender">
+                              <option value="1" @if (isset($rows[0]->gender)) {{($rows[0]->gender=='1')? 'selected' : ''}} @endif>남자</option>
+                              <option value="2" @if (isset($rows[0]->gender)) {{($rows[0]->gender=='2')? 'selected' : ''}} @endif>여자</option>
+                          </select>
+                      </div>
+                  </div>
+                <div class="form-group row">
+                    <label for="state" class="col-sm-2 col-form-label card">구글 검수</label>
+                    <div class="col-sm-10">
+                        <select class="form-control" name="app_review" id="app_review">
+                            <option value="1" @if (isset($rows[0]->app_review)) {{($rows[0]->app_review=='1')? 'selected' : ''}} @endif>검수용</option>
+                            <option value="0" @if (isset($rows[0]->app_review)) {{($rows[0]->app_review=='0')? 'selected' : ''}} @endif>검수용X</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group row">
+                    <label for="state" class="col-sm-2 col-form-label card">텍스트</label>
+                    <div class="col-sm-10">
+                        <select class="form-control" name="text_check" id="text_check">
+                            <option value="0" @if (isset($rows[0]->text_check)) {{($rows[0]->text_check=='0')? 'selected' : ''}} @endif>미검수</option>
+                            <option value="1" @if (isset($rows[0]->text_check)) {{($rows[0]->text_check=='1')? 'selected' : ''}} @endif>없음</option>
+                            <option value="2" @if (isset($rows[0]->text_check)) {{($rows[0]->text_check=='2')? 'selected' : ''}} @endif>있음</option>
+                        </select>
+                    </div>
+                </div>
+                    <div class="form-group row">
+                        <label for="contents" class="col-sm-2 col-form-label card">내용</label>
+                        <div class="col-sm-10">
+                            <input type="text" class="form-control" id="contents" name="contents" value="{{isset($rows[0]->contents)? $rows[0]->contents : ''}}">
+                        </div>
+                    </div>
+                    <div class="form-group row">
+                        <label class="col-sm-2 col-form-label card">url</label>
+                        <div class="col-sm-10">
+                            <input type="text" class="form-control" id="url" name="url" value="{{isset($rows[0]->post)? $rows[0]->post : ''}}">
+                        </div>
+                    </div>
+                    <div class="form-group row">
+                        <label class="col-sm-2 col-form-label card">original 썸네일 url</label>
+                        <div class="col-sm-10">
+                            <input type="text" class="form-control" id="ori_thumbnail" name="ori_thumbnail" value="{{isset($rows[0]->ori_thumbnail)? $rows[0]->ori_thumbnail : ''}}">
+                        </div>
+                    </div>
+                    <div class="form-group row">
+                        <label class="col-sm-2 col-form-label card">원 게시물 작성자</label>
+                        <div class="col-sm-10">
+                            <input type="text" class="form-control" id="sns_account" name="sns_account" value="{{isset($rows[0]->sns_account)? $rows[0]->sns_account : ''}}" readonly>
+                        </div>
+                    </div>
+                    <div class="form-group row">
+                        <label  class="col-sm-2 col-form-label card">작성일</label>
+                        <div class="col-sm-10">
+                            <input type="text" class="form-control datetimepicker" id="created_at" name="created_at" value="{{isset($rows[0]->created_at)? $rows[0]->created_at : \Carbon\Carbon::now()->toDateString()}}">
+                        </div>
+                    </div>
+                <a href="/admin/boards?type={{$params['type']}}"><button type="button" class="btn btn-light float-right">목록</button></a>
+                @if($rows[0]->deleted_at == null)
+                  <button type="submit" class="btn btn-primary float-right mx-3">수정</button>
+                @else
+                    <button type="button" class="btn btn-primary float-right" name="restore_article">복구</button>
+                @endif
+
+            </form>
+        </div>
+    </main>
+@endsection
+
+
+@push('script')
+
+    <script>
+        $(document).ready(function(){
+            // $('.slider').bxSlider();
+
+            $('.bxslider').bxSlider({
+                mode: 'fade',
+                captions: true,
+                slideWidth: 600,
+                adaptiveHeight:true
+            });
+
+            var slider = $('.bxslider_2').bxSlider({
+                mode: 'fade',
+                captions: true,
+                slideWidth: 600,
+                adaptiveHeight:true
+            });
+
+            // datetime picker
+            $.datetimepicker.setLocale('ko');
+            $('.datetimepicker').datetimepicker({
+                format: 'Y-m-d H:i:s',
+                step: 1
+            });
+
+            $('[name="restore_article"]').on('click',function(){
+                $('[name="restore_check"]').val(true);
+                $('#edit_board').submit();
+            });
+
+
+            $(document).on('change', 'input[name^="thumbnail"]', function (e) {
+                var $target = $(this);
+                if (this.files && this.files[0]) {
+                    var reader = new FileReader();
+                    reader.onload = function (e) {
+                        $('#blah').attr('src', e.target.result);
+                        $('#blah').css('width','340');
+                    };
+                    reader.readAsDataURL(this.files[0]);
+                }
+            });
+
+            var imagesPreview = function(input, placeToInsertImagePreview) {
+                if (input.files) {
+                    var filesAmount = input.files.length;
+                    for (i = 0; i < filesAmount; i++) {
+                        var reader = new FileReader();
+                        cnt = 0;
+                        reader.onload = function (event) {
+                            if(event.target.result.substring(5,10) == 'video'){
+                                $($.parseHTML('<div class="d-images data-image-' + cnt + '">')).appendTo(placeToInsertImagePreview);
+                                $($.parseHTML('<div>')).addClass('video_wrapper').addClass('video_wrapper-'+cnt).appendTo('div.data-image-' + cnt);
+                                $($.parseHTML('<video>'))
+                                    .attr('controls',true)
+                                    .attr('autoplay','autoplay')
+                                    .attr('src', event.target.result)
+                                    .appendTo('div.video_wrapper-'+cnt);
+                            }else{
+                                $($.parseHTML('<div class="d-images data-image-' + cnt + '">')).appendTo(placeToInsertImagePreview);
+                                $($.parseHTML('<img>')).attr('src', event.target.result).appendTo('div.data-image-' + cnt);
+                            }
+
+                            cnt++;
+                            if(cnt === filesAmount){
+                                slider.reloadSlider();
+                            }
+                        };
+
+                        reader.readAsDataURL(input.files[i]);
+                    }
+                }
+            };
+
+            $('[name = "data_files[]"]').on('change', function() {
+                $('.gallery').empty();
+                imagesPreview(this, 'div.gallery');
+            });
+        });
+
+
+    </script>
+@endpush

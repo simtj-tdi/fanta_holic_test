@@ -1,0 +1,146 @@
+<?php
+
+namespace App\Http\Controllers\Api\Fanx\Stats;
+
+use Illuminate\Http\Request;
+use Illuminate\Http\Response;
+use Carbon\CarbonPeriod;
+
+use App\Http\Controllers\Controller as BaseController;
+use App\AppStats;
+
+class AppController extends BaseController
+{
+    protected $params;
+    protected $status;
+
+
+    public function __construct()
+    {
+        $this->status = [
+            'installed' => '설치수',
+            'unintalled' => '삭제수',
+            'used' => '잔존수',
+        ];
+//        parent::__construct();
+    }
+
+
+    public function get(Request $request)
+    {
+        $this->params = [
+            'app' => $request->input('app'),
+            'status' => $request->input('status', 'used'),
+            'startDate' => $request->input('start_date', now()->subWeek()->toDateString()),
+            'endDate' => $request->input('end_date', now()->subDay()->toDateString()),
+        ];
+
+        list($labels, $items, $parameters) = $this->getStats();
+
+        return response()->json([
+            'result' => 'success',
+            'errno' => 0,
+            'message' => 'success',
+            'data' => [
+                'label' => $labels,
+                'items'=> $items,
+                'parameters' => $parameters,
+            ],
+        ], Response::HTTP_OK);
+    }
+
+
+    protected function getStats()
+    {
+        $labels = $this->getLabels();
+        $stats = [];
+
+        foreach ($this->status as $key => $status) {
+
+            $items = [];
+
+            foreach ($labels as $label) {
+
+                $count = AppStats::select()
+                    ->where(function ($query) use ($label) {
+                        $query->where('app', $this->params['app'])
+                            ->where('date', $label);
+                    })
+                    ->where(function ($query) use ($key) {
+                        if ($key == 'used') {
+                            $query->orWhere('status', 'installed')
+                                ->orWhere('status', 'used');
+                        } else {
+                            $query->where('status', $key);
+                        }
+                    })
+                    ->sum('count');
+
+                $items[] = [
+                    'label' => $label,
+                    'count' => $count,
+                    'status' => 'none',
+                    'amount' => 0.0,
+                ];
+            }
+
+            $items = $this->addItemStatus($items);
+
+            $stats[] = [
+                'name' => $status,
+                'count' => $count,
+                'items' => $items,
+            ];
+        }
+
+        $stats = collect($stats)->sortByDesc('count')->values()->toArray();
+
+        return [$labels, $stats, []];
+    }
+
+
+    protected function addItemStatus($items)
+    {
+        foreach ($items as $key => $item) {
+            if ($key > 0)  {
+
+                if ($items[$key - 1]['count'] == 0) {
+                    if ($item['count'] == 0) {
+                        $amount = 0.0;
+                    } else {
+                        $amount = 100.0;
+                    }
+                } else {
+                    $amount = round(($item['count'] - $items[$key - 1]['count']) / $items[$key - 1]['count'] * 100, 2);
+                }
+
+                if ($item['count'] > $items[$key - 1]['count']) {
+                    $status = 'increased';
+                } else if ($item['count'] < $items[$key - 1]['count']) {
+                    $status = 'decreased';
+                } else {
+                    $status = 'none';
+                }
+
+                $items[$key]['status'] = $status;
+                $items[$key]['amount'] = $amount;
+            }
+        }
+
+        return $items;
+    }
+
+
+    protected function getLabels()
+    {
+        $dates = new CarbonPeriod(
+            $this->params['startDate'],
+            'P1D',
+            $this->params['endDate']
+        );
+
+        return collect($dates)->map(function ($item) {
+            return $item->format('Y-m-d');
+        })->toArray();
+    }
+}
