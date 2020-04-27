@@ -4,12 +4,14 @@ namespace App\Console\Commands;
 
 use App\Board;
 use App\Follow;
-use DB;
+use App\User;
 use App\Device;
 use Carbon\Carbon;
 use App\Push;
+use Carbon\CarbonTimeZone;
 use Illuminate\Console\Command;
 use App\Http\Traits\PushTrait;
+use Illuminate\Support\Facades\DB;
 
 
 class PushWorkerCommand extends Command
@@ -39,43 +41,6 @@ class PushWorkerCommand extends Command
         parent::__construct();
     }
 
-
-
-
-/*
-America/Los_Angeles
-America/New_York
-America/St_Johns
-Asia/Kuala_Lumpur
-Asia/Manila
-Asia/Seoul
-Asia/Shanghai
-Asia/Tokyo
-Pacific/Apia
-Pacific/Auckland
-*/
-
-
-
-
-
-    private $TIMEZONE = array(
-                        'Asia/Ho_Chi_Minh',
-                        'Asia/Kuala_Lumpur',
-                        'Asia/Manila',
-                        'Asia/Seoul',
-                        'Asia/Shanghai',
-                        'Asia/Tokyo',
-                        'Pacific/Apia',
-                        'Pacific/Auckland',
-                        'America/Anchorage',
-                        'America/Chicago',
-                        'America/Denver',
-                        'America/Los_Angeles',
-                        'America/New_York',
-                        'America/St_Johns',
-                    );
-
     /**
      * Execute the console command.
      *
@@ -83,11 +48,8 @@ Pacific/Auckland
      */
     public function handle()
     {
-        if (in_array($this->argument('type'), $this->TIMEZONE)) {
-            $type = $this->argument('type');
-        } else {
-            $type = strtoupper($this->argument('type'));
-        }
+
+        $type = strtoupper($this->argument('type'));
 
         $apps = array_keys(config('celeb'));
         // 전체 발송
@@ -107,33 +69,49 @@ Pacific/Auckland
                 $this->new_content($app);
             }
 
-            elseif (in_array($type, $this->TIMEZONE)) {
-//                $this->info($type);
-                $this->byCountry($app, $type);
+//            elseif (in_array($type, $this->TIMEZONE)) {
+//                $this->byCountry($app, $type);
+//            }
+            elseif ($type == "COUNTRY") {
+                //$users = User::distinct()->get();
+                $users = User::select('timezone')->distinct('timezone')->where('timezone','!=','UTC')->get();
+                foreach ($users as $user) {
+                    $Tz = Carbon::now($user->timezone);
+                    //echo $Tz->format('Y-m-d H:i');
+                    //$Tz_Format = "20";
+                    $Tz_Format = $Tz->format('H');
+                    if ($Tz_Format == "13" || $Tz_Format == "20" || $Tz_Format == "22") {
+                        $this->byCountry($app, $user->timezone);
+                    }
+
+                    sleep(2);
+                }
             }
+
+
         }
     }
 
     //todo 모델 함수처리
     protected function all($app){
         $push = Push::select([
-                'id',
-                'app',
-                'batch_type',
-                'managed_type',
-                'new_post_count',
-                'title',
-                'content',
-                'tick',
-                'push_type',
-                'img_url',
-                'action',
-                'url',
-                'board_type',
-                'board_id',
-                'streaming_url',
-                'state'
-            ])
+            'id',
+            'app',
+            'batch_type',
+            'managed_type',
+            'new_post_count',
+            'title',
+            'content',
+            'tick',
+            'push_type',
+            'img_url',
+            'action',
+            'url',
+            'board_type',
+            'board_id',
+            'streaming_url',
+            'state'
+        ])
             //앱
             ->where('app',$app)
             //발송 타입
@@ -161,15 +139,15 @@ Pacific/Auckland
 
             $query = Device::where('app',$app)
                 ->where(function($query) use($push){
-                  if($push->manage_type == 'S'){   // push 생성시 입력한 managed_type 기준으로 devices에 있는 push 받기/안받기 상태 종류 검사
-                      return $query->where('streaming_push',1);
-                  }elseif ($push->managed_type == 'C'){
-                      return $query->where('comment_push',1);
-                  }elseif ($push->managed_type == 'B'){
-                      return $query->where('board_push',1);
-                  }else{
-                      return $query->where('is_push',1);
-                  }
+                    if($push->manage_type == 'S'){   // push 생성시 입력한 managed_type 기준으로 devices에 있는 push 받기/안받기 상태 종류 검사
+                        return $query->where('streaming_push',1);
+                    }elseif ($push->managed_type == 'C'){
+                        return $query->where('comment_push',1);
+                    }elseif ($push->managed_type == 'B'){
+                        return $query->where('board_push',1);
+                    }else{
+                        return $query->where('is_push',1);
+                    }
                 })
                 //->where('user_id',$push->user_id)
                 ->where('fcm_token','!=',null)
@@ -401,16 +379,16 @@ Pacific/Auckland
             ->first();
 
         $artist_arr = Board::select('artists_id')
-                ->where('created_at', '>',  Carbon::now()->addHour(-1))
-                ->groupBy('artists_id')
-                ->havingRaw('count(*) > 0')
-                ->get()
-                ;
+            ->where('created_at', '>',  Carbon::now()->addHour(-1))
+            ->groupBy('artists_id')
+            ->havingRaw('count(*) > 0')
+            ->get()
+        ;
 
         $user_id_arr = follow::select('user_id')
-                ->whereIn('artist_id', $artist_arr)
-                ->get()
-                ;
+            ->whereIn('artist_id', $artist_arr)
+            ->get()
+        ;
 
         // 대기 중 목록이 있을 경우
         if ( ! is_null($push)){
@@ -538,7 +516,7 @@ Pacific/Auckland
                 'devices.comment_push',
                 'devices.board_push',
                 'users.timezone'
-                ])
+            ])
                 ->leftJoin('users', function ($join){
                     $join->on('devices.user_id', '=', 'users.id');
                 })
@@ -646,20 +624,12 @@ Pacific/Auckland
     {
         $CountryTxt = array(
             "Asia/Ho_Chi_Minh"=>"Bài đăng mới đã được đăng ký.(Ho_Chi_Minh)",
-            "Asia/Kuala_Lumpur"=>"new posts have been registered.(Kuala_Lumpur)",
-            "Asia/Manila"=>"new posts have been registered.(Manila)",
             "Asia/Seoul"=>"새로운 게시물이 등록되었습니다.(Seoul)",
-            "Asia/Shanghai"=>"new posts have been registered.(Shanghai)",
-            "Asia/Tokyo"=>"new posts have been registered.(Tokyo)",
-            "Pacific/Apia"=>"new posts have been registered.(Apia)",
-            "Pacific/Auckland"=>"new posts have been registered.(Auckland)",
-            "America/Anchorage"=>"new posts have been registered.(Anchorage)",
-            "America/Chicago"=>"new posts have been registered.(Chicago)",
-            "America/Denver"=>"new posts have been registered.(Denver)",
-            "America/Los_Angeles"=>"new posts have been registered.(Los_Angeles)",
-            "America/New_York"=>"new posts have been registered.(New_York)",
-            "America/St_Johns"=>"new posts have been registered.(St_Johns)",
         );
+
+        if (empty($CountryTxt[$type])) {
+            return "new posts have been registered.({$type})";
+        }
 
         return $CountryTxt[$type];
     }
