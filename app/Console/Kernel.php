@@ -53,22 +53,7 @@ class Kernel extends ConsoleKernel
 //            // 중복 실행 방지
 //            ->withoutOverlapping()->between('9:00', '23:00');
 
-        $schedule->command('push:worker Asia/Ho_Chi_Minh')->timezone('Asia/Ho_Chi_Minh')->dailyAt('13:00')->dailyAt('20:00')->dailyAt('23:00');
-        $schedule->command('push:worker Asia/Kuala_Lumpur')->timezone('Asia/Kuala_Lumpur')->dailyAt('13:00')->dailyAt('20:00')->dailyAt('23:00');
-        $schedule->command('push:worker Asia/Manila')->timezone('Asia/Manila')->dailyAt('13:00')->dailyAt('20:00')->dailyAt('23:00');
-        $schedule->command('push:worker Asia/Seoul')->timezone('Asia/Seoul')->dailyAt('13:00')->dailyAt('20:00')->dailyAt('23:00');
-        $schedule->command('push:worker Asia/Shanghai')->timezone('Asia/Shanghai')->dailyAt('13:00')->dailyAt('20:00')->dailyAt('23:00');
-        $schedule->command('push:worker Asia/Tokyo')->timezone('Asia/Tokyo')->dailyAt('13:00')->dailyAt('20:00')->dailyAt('23:00');
-
-        $schedule->command('push:worker Pacific/Apia')->timezone('Pacific/Apia')->dailyAt('13:00')->dailyAt('20:00')->dailyAt('23:00');
-        $schedule->command('push:worker Pacific/Auckland')->timezone('Pacific/Auckland')->dailyAt('13:00')->dailyAt('20:00')->dailyAt('23:00');
-
-        $schedule->command('push:worker America/Anchorage')->timezone('America/Anchorage')->dailyAt('13:00')->dailyAt('20:00')->dailyAt('23:00');
-        $schedule->command('push:worker America/Chicago')->timezone('America/Chicago')->dailyAt('13:00')->dailyAt('20:00')->dailyAt('23:00');
-        $schedule->command('push:worker America/Denver')->timezone('America/Denver')->dailyAt('13:00')->dailyAt('20:00')->dailyAt('23:00');
-        $schedule->command('push:worker America/Los_Angeles')->timezone('America/Los_Angeles')->dailyAt('13:00')->dailyAt('20:00')->dailyAt('23:00');
-        $schedule->command('push:worker America/New_York')->timezone('America/New_York')->dailyAt('13:00')->dailyAt('20:00')->dailyAt('23:00');
-        $schedule->command('push:worker America/St_Johns')->timezone('America/St_Johns')->dailyAt('13:00')->dailyAt('20:00')->dailyAt('23:00');
+        $schedule->command('push:worker Country')->timezone('Asia/Seoul')->hourly();
     }
 
     /**
