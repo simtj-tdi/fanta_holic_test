@@ -192,6 +192,10 @@ class Controller extends baseController
             }
         }
 
+        $arr_ip = geoip()->getLocation($_SERVER['REMOTE_ADDR']);
+
+        $request->timezone = $arr_ip['timezone'];
+
         if (!isset($user) || $user == null) {
             $new_user = [
                 'app' => $app

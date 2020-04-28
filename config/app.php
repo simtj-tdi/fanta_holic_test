@@ -181,7 +181,7 @@ return [
         // App\Providers\BroadcastServiceProvider::class,
         App\Providers\EventServiceProvider::class,
         App\Providers\RouteServiceProvider::class,
-
+        Torann\GeoIP\GeoIPServiceProvider::class,
     ],
 
     /*
@@ -233,6 +233,7 @@ return [
         'View' => Illuminate\Support\Facades\View::class,
         'Thumbnail' => Lakshmaji\Thumbnail\Facade\Thumbnail::class,
         'Twitter' => Thujohn\Twitter\Facades\Twitter::class,
+        'GeoIP' => Torann\GeoIP\Facades\GeoIP::class,
     ],
 
 ];
