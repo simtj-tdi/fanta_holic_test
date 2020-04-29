@@ -532,6 +532,11 @@ class PushWorkerCommand extends Command
                     }
                 })
                 ->where('users.timezone','=', $type)
+                ->when($type == "Asia/Seoul",
+                    function ($query) {
+                        return $query->orwhere('users.timezone','=', 'UTC');
+                    }
+                )
                 ->where('devices.fcm_token', '!=', null)
                 ->groupBy('devices.fcm_token');
 
