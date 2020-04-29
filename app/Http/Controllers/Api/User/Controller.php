@@ -203,6 +203,8 @@ class Controller extends baseController
             if ($request->timezone != null) {
                 $new_user['timezone'] = $request->timezone;
             }
+            $new_user['connection_ip'] = $_SERVER['REMOTE_ADDR'];
+
             $user = new User($new_user);
             $user->save();
             $user->devices()->create($params);
@@ -216,6 +218,7 @@ class Controller extends baseController
         } else {
             if ($request->timezone != null) {
                 $user->timezone = $request->timezone;
+                $user->connection_ip = $_SERVER['REMOTE_ADDR'];
                 $user->save();
             }
 

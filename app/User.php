@@ -141,7 +141,8 @@ class User extends Authenticatable
         'sns_type',
         'sns_id',
         'profile_photo_url',
-        'timezone'
+        'timezone',
+        'connection_ip'
     ];
 
     protected $enumCasts = [
